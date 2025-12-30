@@ -1,7 +1,5 @@
 package com.example.handymen;
 
-import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,11 +8,12 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
 import java.util.List;
-public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerViewHolder> {
 
-    private List<Worker> workerList;
+public class WorkerAdapter
+        extends RecyclerView.Adapter<WorkerAdapter.WorkerViewHolder> {
+
+    private final List<Worker> workerList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
@@ -31,19 +30,25 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
 
     @NonNull
     @Override
-    public WorkerViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_worker, parent, false);
+    public WorkerViewHolder onCreateViewHolder(
+            @NonNull ViewGroup parent, int viewType) {
+
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_worker, parent, false);
+
         return new WorkerViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull WorkerViewHolder holder, int position) {
+    public void onBindViewHolder(
+            @NonNull WorkerViewHolder holder, int position) {
+
         Worker worker = workerList.get(position);
+
         holder.tvName.setText(worker.name);
-        holder.tvProfession.setText(worker.profession);
+        holder.tvPhone.setText(worker.phone);
         holder.tvLocation.setText(worker.location);
 
-        // Set click listener
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onItemClick(worker);
@@ -56,15 +61,16 @@ public class WorkerAdapter extends RecyclerView.Adapter<WorkerAdapter.WorkerView
         return workerList.size();
     }
 
-    static class WorkerViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvProfession, tvLocation;
+    static class WorkerViewHolder
+            extends RecyclerView.ViewHolder {
 
-        public WorkerViewHolder(@NonNull View itemView) {
+        TextView tvName, tvPhone, tvLocation;
+
+        WorkerViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tvName);
-            tvProfession = itemView.findViewById(R.id.tvProfession);
+            tvPhone = itemView.findViewById(R.id.tvPhone);
             tvLocation = itemView.findViewById(R.id.tvLocation);
         }
     }
 }
-
