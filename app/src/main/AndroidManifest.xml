@@ -26,8 +26,14 @@
         <activity android:name=".UserDashboardActivity" />
         <activity android:name=".UserSignUpActivity" />
         <activity android:name=".WorkerDashboardActivity" />
-        <activity android:name=".ElectricianActivity" />
-        <activity android:name=".WorkerDetailsActivity" />
+        <activity android:name=".WorkerListActivity"/>
+        <activity android:name=".ElectricianListActivity" />
+        <activity android:name=".InternetListActivity" />
+        <activity android:name=".MaidListActivity" />
+        <activity android:name=".PlumberListActivity" />
+        <activity android:name=".PainterListActivity" />
+        <activity android:name=".MasonListActivity" />
+        <activity android:name=".WorkerDetailActivity" />
         <activity android:name=".ProfileActivity" />
 <!--        <activity android:name=".MyRequestsActivity" />-->
 <!--        <activity android:name=".OngoingWorkActivity" />-->

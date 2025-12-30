@@ -23,12 +23,11 @@
             android:layout_height="wrap_content"
             android:text="Name:"
             android:textSize="18sp"/>
-        <TextView
-            android:id="@+id/tvProfileName"
+        <EditText
+            android:id="@+id/etProfileName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="18sp"
-            android:textColor="#000"
             android:layout_marginBottom="16dp"/>
 
         <TextView
@@ -49,12 +48,11 @@
             android:layout_height="wrap_content"
             android:text="Phone:"
             android:textSize="18sp"/>
-        <TextView
-            android:id="@+id/tvProfilePhone"
+        <EditText
+            android:id="@+id/etProfilePhone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="18sp"
-            android:textColor="#000"
             android:layout_marginBottom="16dp"/>
 
         <TextView
@@ -62,13 +60,21 @@
             android:layout_height="wrap_content"
             android:text="Location:"
             android:textSize="18sp"/>
-        <TextView
-            android:id="@+id/tvProfileLocation"
+        <EditText
+            android:id="@+id/etProfileLocation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="18sp"
-            android:textColor="#000"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="24dp"/>
 
+
+        <Button
+            android:id="@+id/btnSaveProfile"
+            android:layout_width="150dp"
+            android:layout_height="48dp"
+            android:text="Save Changes"
+            android:backgroundTint="#2d9d48"
+            android:textColor="#FFFFFF"
+            android:textAllCaps="false"/>
     </LinearLayout>
 </ScrollView>

@@ -10,23 +10,75 @@ import android.text.style.ClickableSpan;
 import android.text.TextPaint;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+
 public class UserLoginActivity extends AppCompatActivity {
 
-    TextView tvSignUp;
+    EditText etEmail, etPassword;
     Button btnLogin;
+    TextView tvSignUp;
+
+    FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_login);
 
-        tvSignUp = findViewById(R.id.tvUserSignUp);
+        // Firebase
+        mAuth = FirebaseAuth.getInstance();
+
+        // Views
+        etEmail = findViewById(R.id.userEmail);
+        etPassword = findViewById(R.id.userPassword);
         btnLogin = findViewById(R.id.btnUserLogin);
+        tvSignUp = findViewById(R.id.tvUserSignUp);
+
+        btnLogin.setOnClickListener(v -> loginUser());
+
+        setupSignUpLink();
+    }
+
+    private void loginUser() {
+
+        String email = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
+
+        if (email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        mAuth.signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener(task -> {
+
+                    if (task.isSuccessful()) {
+                        Toast.makeText(this, "Login successful", Toast.LENGTH_SHORT).show();
+
+                        startActivity(new Intent(
+                                UserLoginActivity.this,
+                                UserDashboardActivity.class
+                        ));
+                        finish();
+
+                    } else {
+                        Toast.makeText(
+                                this,
+                                "Login failed: " + task.getException().getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show();
+                    }
+                });
+    }
+
+    private void setupSignUpLink() {
 
         String text = "Are you a new user? Sign Up";
         SpannableString spannableString = new SpannableString(text);
@@ -42,7 +94,6 @@ public class UserLoginActivity extends AppCompatActivity {
 
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
-                super.updateDrawState(ds);
                 ds.setColor(Color.BLUE);
                 ds.setUnderlineText(true);
             }
@@ -50,6 +101,7 @@ public class UserLoginActivity extends AppCompatActivity {
 
         int start = text.indexOf("Sign Up");
         int end = start + "Sign Up".length();
+
         spannableString.setSpan(
                 clickableSpan,
                 start,
@@ -59,14 +111,5 @@ public class UserLoginActivity extends AppCompatActivity {
 
         tvSignUp.setText(spannableString);
         tvSignUp.setMovementMethod(LinkMovementMethod.getInstance());
-
-        btnLogin.setOnClickListener(v -> {
-            Intent intent = new Intent(
-                    UserLoginActivity.this,
-                    UserDashboardActivity.class
-            );
-            startActivity(intent);
-            finish();
-        });
     }
 }

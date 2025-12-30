@@ -2,62 +2,102 @@ package com.example.handymen;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
-
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 public class UserDashboardActivity extends AppCompatActivity {
 
     DrawerLayout drawerLayout;
     NavigationView navigationView;
+    ImageButton menuBtn;
+
+    Button btnElectrician, btnPlumber, btnPainter, btnMason, btnMaid, btnInternetProvider;
+
+    FirebaseAuth mAuth;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_dashboard);
 
-        Button btnElectrician = findViewById(R.id.btnElectrician);
-        Button btnPlumber = findViewById(R.id.btnPlumber);
-        Button btnPainter = findViewById(R.id.btnPainter);
-        Button btnMason = findViewById(R.id.btnMason);
-        Button btnMaid = findViewById(R.id.btnMaid);
-        Button btnInternet = findViewById(R.id.btnInternetProvider);
+        // Firebase Auth
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseUser firebaseUser = mAuth.getCurrentUser();
+        if (firebaseUser == null) {
+            startActivity(new Intent(this, UserLoginActivity.class));
+            finish();
+            return;
+        }
 
-        btnElectrician.setOnClickListener(v -> openWorkerList("Electrician"));
-        btnPlumber.setOnClickListener(v -> openWorkerList("Plumber"));
-        btnPainter.setOnClickListener(v -> openWorkerList("Painter"));
-        btnMason.setOnClickListener(v -> openWorkerList("Mason"));
-        btnMaid.setOnClickListener(v -> openWorkerList("Maid"));
-        btnInternet.setOnClickListener(v -> openWorkerList("Internet Provider"));
-
+        // Views
         drawerLayout = findViewById(R.id.drawerLayout);
         navigationView = findViewById(R.id.navigationView);
+        menuBtn = findViewById(R.id.menuBtn);
 
-        findViewById(R.id.menuBtn).setOnClickListener(v ->
-                drawerLayout.openDrawer(GravityCompat.END));
+        btnElectrician = findViewById(R.id.btnElectrician);
+        btnPlumber = findViewById(R.id.btnPlumber);
+        btnPainter = findViewById(R.id.btnPainter);
+        btnMason = findViewById(R.id.btnMason);
+        btnMaid = findViewById(R.id.btnMaid);
+        btnInternetProvider = findViewById(R.id.btnInternetProvider);
 
+        // Menu button
+        menuBtn.setOnClickListener(v ->
+                drawerLayout.openDrawer(GravityCompat.END)
+        );
+
+        // Drawer menu
         navigationView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
 
-            if (item.getItemId() == R.id.menuLogout) {
-                FirebaseAuth.getInstance().signOut();
-                startActivity(new Intent(this, UserLoginActivity.class));
-                finish();
+            if (id == R.id.menuProfile) {
+                startActivity(new Intent(this, ProfileActivity.class));
+            } else if (id == R.id.menuLogout) {
+                logout();
             }
 
             drawerLayout.closeDrawer(GravityCompat.END);
             return true;
         });
 
+        // 🔹 Worker buttons → ONLY open activities
+        btnElectrician.setOnClickListener(v ->
+                startActivity(new Intent(this, ElectricianListActivity.class)));
+
+        btnPlumber.setOnClickListener(v ->
+                startActivity(new Intent(this, PlumberListActivity.class)));
+
+        btnPainter.setOnClickListener(v ->
+                startActivity(new Intent(this, PainterListActivity.class)));
+
+        btnMason.setOnClickListener(v ->
+                startActivity(new Intent(this, MasonListActivity.class)));
+
+        btnMaid.setOnClickListener(v ->
+                startActivity(new Intent(this, MaidListActivity.class)));
+
+        btnInternetProvider.setOnClickListener(v ->
+                startActivity(new Intent(this, InternetListActivity.class)));
     }
 
-    private void openWorkerList(String profession) {
-        Intent intent = new Intent(this, ElectricianActivity.class);
-        intent.putExtra("profession", profession);
-        startActivity(intent);
+    private void logout() {
+        mAuth.signOut();
+        startActivity(new Intent(this, UserLoginActivity.class));
+        finish();
     }
 }
