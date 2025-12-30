@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Brick / Trowel -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M2 21h20v2H2v-2zm2-6h16v4H4v-4zm0-6h16v4H4v-4zm0-6h16v4H4V3z"/>
+</vector>

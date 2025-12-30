@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="24dp"
+    android:background="@drawable/bg_image">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Worker Login"
+        android:textSize="24sp"
+        android:textColor="#001F54"
+        android:layout_marginBottom="24dp"/>
+
+    <EditText
+        android:id="@+id/workerEmail"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Email"
+        android:padding="12dp"
+        android:background="@drawable/rounded_edittext"
+        android:layout_marginBottom="16dp"/>
+
+    <EditText
+        android:id="@+id/workerPassword"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Password"
+        android:padding="12dp"
+        android:background="@drawable/rounded_edittext"
+        android:layout_marginBottom="24dp"
+        android:inputType="textPassword"/>
+
+    <Button
+        android:id="@+id/btnWorkerLogin"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Login"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:background="@drawable/rounded_button"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:id="@+id/tvSignUp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Are you a new user? Sign Up"
+        android:textColor="#001F54"
+        android:textSize="16sp"/>
+</LinearLayout>

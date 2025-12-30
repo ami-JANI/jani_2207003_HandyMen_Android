@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_image"
+    android:padding="24dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Worker Sign Up"
+            android:textSize="24sp"
+            android:textColor="#001F54"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Full Name -->
+        <EditText
+            android:id="@+id/etWorkerName"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Full Name"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Email -->
+        <EditText
+            android:id="@+id/etWorkerEmail"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Email"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"
+            android:inputType="textEmailAddress"/>
+
+        <!-- Phone -->
+        <EditText
+            android:id="@+id/etWorkerPhone"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Phone Number"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"
+            android:inputType="phone"/>
+
+        <!-- Profession Spinner -->
+        <Spinner
+            android:id="@+id/spinnerProfession"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Experience -->
+        <EditText
+            android:id="@+id/etWorkerExperience"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Experience (years)"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"
+            android:inputType="number"/>
+
+        <!-- Hourly Rate -->
+        <EditText
+            android:id="@+id/etWorkerRate"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Hourly Rate"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"
+            android:inputType="numberDecimal"/>
+
+        <!-- City / Area -->
+        <EditText
+            android:id="@+id/etWorkerAddress"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="City / Area"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Password -->
+        <EditText
+            android:id="@+id/etWorkerPassword"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Password"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="8dp"
+            android:inputType="textPassword"/>
+
+        <!-- Confirm Password -->
+        <EditText
+            android:id="@+id/etWorkerConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:hint="Confirm Password"
+            android:padding="12dp"
+            android:background="@drawable/rounded_edittext"
+            android:layout_marginBottom="16dp"
+            android:inputType="textPassword"/>
+
+        <!-- Password Rules -->
+        <LinearLayout
+            android:orientation="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp">
+
+            <CheckBox
+                android:id="@+id/cbLength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Minimum 8 characters"
+                android:enabled="false"/>
+
+            <CheckBox
+                android:id="@+id/cbUpperLower"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Uppercase &amp; lowercase letters"
+                android:enabled="false"/>
+
+            <CheckBox
+                android:id="@+id/cbNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Contains a number"
+                android:enabled="false"/>
+
+            <CheckBox
+                android:id="@+id/cbSpecial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Contains a special character"
+                android:enabled="false"/>
+        </LinearLayout>
+
+        <!-- Sign Up Button -->
+        <Button
+            android:id="@+id/btnWorkerSignUp"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="Sign Up"
+            android:textColor="#FFFFFF"
+            android:textSize="18sp"
+            android:background="@drawable/rounded_button"/>
+    </LinearLayout>
+</ScrollView>

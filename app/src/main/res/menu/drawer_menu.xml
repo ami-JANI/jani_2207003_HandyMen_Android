@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/menuProfile"
+        android:title="My Profile"
+        android:icon="@drawable/ic_profile"/>
+
+    <item
+        android:id="@+id/menuRequests"
+        android:title="My Requests" />
+
+    <item
+        android:id="@+id/menuOngoing"
+        android:title="Ongoing Work" />
+
+    <item
+        android:id="@+id/menuLogout"
+        android:title="Sign Out" />
+
+</menu>
