@@ -1,10 +1,9 @@
 package com.example.handymen;
 
-import android.annotation.SuppressLint;
-import android.app.DatePickerDialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.DatePicker;
 import android.widget.GridLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -16,34 +15,45 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.*;
 
-import java.util.Calendar;
 import java.util.HashMap;
 
 public class WorkerDetailActivity extends AppCompatActivity {
 
-    TextView tvName, tvProfession, tvLocation, tvSelectedDate;
-    Button btnPickDate;
+    TextView tvName, tvProfession, tvLocation, tvSelectedDate,
+            tvPhone, tvExperience, tvRate, tvEmail;
+
     GridLayout slotGrid;
+    DatePicker datePicker;
 
     DatabaseReference workerRef, bookingRef;
     FirebaseUser currentUser;
     String workerId;
+    String selectedDate = "";
 
-    @SuppressLint("MissingInflatedId")
+    // 🎨 COLORS (NO TINT — DIRECT COLOR)
+    private final int COLOR_AVAILABLE     = Color.LTGRAY;
+    private final int COLOR_REQUESTED     = Color.YELLOW;
+    private final int COLOR_MY_BOOKED     = Color.parseColor("#2d9d48");
+    private final int COLOR_OTHER_BOOKED  = Color.RED;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_worker_details);
 
-        // 🔹 Init views
+        // Views
         tvName = findViewById(R.id.tvName);
         tvProfession = findViewById(R.id.tvProfession);
         tvLocation = findViewById(R.id.tvLocation);
+        tvPhone = findViewById(R.id.tvPhone);
+        tvExperience = findViewById(R.id.tvExperience);
+        tvRate = findViewById(R.id.tvRate);
+        tvEmail = findViewById(R.id.tvEmail);
         tvSelectedDate = findViewById(R.id.tvSelectedDate);
-        btnPickDate = findViewById(R.id.btnPickDate);
-        slotGrid = findViewById(R.id.slotGrid);
 
-        // 🔹 Current user
+        slotGrid = findViewById(R.id.slotGrid);
+        datePicker = findViewById(R.id.datePicker);
+
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
@@ -51,7 +61,6 @@ public class WorkerDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // 🔹 Get Firebase worker key
         workerId = getIntent().getStringExtra("workerId");
         if (workerId == null) {
             Toast.makeText(this, "Worker not found", Toast.LENGTH_SHORT).show();
@@ -59,7 +68,6 @@ public class WorkerDetailActivity extends AppCompatActivity {
             return;
         }
 
-        // 🔹 Firebase refs (SAME STYLE AS DASHBOARD)
         workerRef = FirebaseDatabase.getInstance()
                 .getReference("workers")
                 .child(workerId);
@@ -69,18 +77,32 @@ public class WorkerDetailActivity extends AppCompatActivity {
                 .child(workerId);
 
         loadWorkerDetails();
+        initSlotButtons();
 
-        btnPickDate.setOnClickListener(v -> showDatePicker());
+        // Date picker
+        datePicker.init(
+                datePicker.getYear(),
+                datePicker.getMonth(),
+                datePicker.getDayOfMonth(),
+                (view, year, month, day) -> {
+                    selectedDate = day + "-" + (month + 1) + "-" + year;
+                    tvSelectedDate.setText(selectedDate);
+                    loadSlots(selectedDate);
+                });
+
+        selectedDate = datePicker.getDayOfMonth() + "-"
+                + (datePicker.getMonth() + 1) + "-"
+                + datePicker.getYear();
+
+        tvSelectedDate.setText(selectedDate);
+        loadSlots(selectedDate);
     }
 
-    // ======================================================
-    // LOAD WORKER DETAILS
-    // ======================================================
+    // ================= WORKER DETAILS =================
     private void loadWorkerDetails() {
         workerRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-
                 if (!snapshot.exists()) {
                     Toast.makeText(WorkerDetailActivity.this,
                             "Worker profile not found", Toast.LENGTH_SHORT).show();
@@ -88,12 +110,16 @@ public class WorkerDetailActivity extends AppCompatActivity {
                     return;
                 }
 
-                Worker worker = snapshot.getValue(Worker.class);
-                if (worker == null) return;
+                Worker w = snapshot.getValue(Worker.class);
+                if (w == null) return;
 
-                tvName.setText(worker.name);
-                tvProfession.setText(worker.profession);
-                tvLocation.setText(worker.location);
+                tvName.setText(w.name);
+                tvProfession.setText(w.profession);
+                tvLocation.setText(w.location);
+                tvExperience.setText(w.experience);
+                tvPhone.setText(w.phone);
+                tvRate.setText(w.rate);
+                tvEmail.setText(w.email);
             }
 
             @Override
@@ -101,83 +127,78 @@ public class WorkerDetailActivity extends AppCompatActivity {
         });
     }
 
-    // ======================================================
-    // DATE PICKER
-    // ======================================================
-    private void showDatePicker() {
-        Calendar c = Calendar.getInstance();
+    // ================= SLOT BUTTONS INIT =================
+    private void initSlotButtons() {
+        slotGrid.removeAllViews();
+        slotGrid.setColumnCount(4);
 
-        DatePickerDialog dpd = new DatePickerDialog(
-                this,
-                (view, year, month, day) -> {
-                    String date = day + "-" + (month + 1) + "-" + year;
-                    tvSelectedDate.setText(date);
-                    loadSlots(date);
-                },
-                c.get(Calendar.YEAR),
-                c.get(Calendar.MONTH),
-                c.get(Calendar.DAY_OF_MONTH)
-        );
-        dpd.show();
+        for (int i = 0; i < 8; i++) {
+            Button btn = new Button(this);
+
+            GridLayout.LayoutParams params = new GridLayout.LayoutParams();
+            params.width = 0;
+            params.height = GridLayout.LayoutParams.WRAP_CONTENT;
+            params.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
+            params.setMargins(12, 12, 12, 12);
+
+            btn.setLayoutParams(params);
+            btn.setAllCaps(false);
+            btn.setBackgroundColor(COLOR_AVAILABLE);
+
+            slotGrid.addView(btn);
+        }
     }
 
-    // ======================================================
-    // LOAD SLOTS
-    // ======================================================
+    // ================= LOAD SLOTS =================
     private void loadSlots(String date) {
-
-        slotGrid.removeAllViews();
-
-        bookingRef.child(date)
-                .addListenerForSingleValueEvent(new ValueEventListener() {
+        bookingRef.child(date).addListenerForSingleValueEvent(
+                new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
 
-                        HashMap<String, String> booked = new HashMap<>();
-
-                        if (snapshot.exists()) {
-                            for (DataSnapshot ds : snapshot.getChildren()) {
-                                booked.put(ds.getKey(), ds.getValue(String.class));
-                            }
-                        }
-
-                        // 8 slots: 9AM–4PM
-                        for (int i = 0; i < 8; i++) {
-
+                        for (int i = 0; i < slotGrid.getChildCount(); i++) {
+                            Button slot = (Button) slotGrid.getChildAt(i);
                             int hour = 9 + i;
                             String slotKey = hour + ":00";
 
-                            Button slot = new Button(WorkerDetailActivity.this);
                             slot.setText(slotKey);
+                            slot.setEnabled(true);
+                            slot.setBackgroundColor(COLOR_AVAILABLE);
+                            slot.setOnClickListener(null);
 
-                            GridLayout.LayoutParams params =
-                                    new GridLayout.LayoutParams();
-                            params.width = 0;
-                            params.columnSpec = GridLayout.spec(
-                                    GridLayout.UNDEFINED, 1f);
-                            params.setMargins(8, 8, 8, 8);
-                            slot.setLayoutParams(params);
+                            DataSnapshot slotSnap = snapshot.child(slotKey);
 
-                            String bookedBy = booked.get(slotKey);
-
-                            if (bookedBy == null) {
-                                // 🟢 AVAILABLE
-                                slot.setBackgroundColor(Color.TRANSPARENT);
+                            // FREE
+                            if (!slotSnap.exists()) {
+                                slot.setBackgroundColor(COLOR_AVAILABLE);
                                 slot.setOnClickListener(v ->
-                                        selectSlot(slot, date, slotKey));
-
-                            } else if (bookedBy.equals(currentUser.getUid())) {
-                                // ✅ BOOKED BY CURRENT USER
-                                slot.setBackgroundColor(Color.parseColor("#2d9d48"));
-                                slot.setEnabled(false);
-
-                            } else {
-                                // ❌ BOOKED BY OTHERS
-                                slot.setBackgroundColor(Color.RED);
-                                slot.setEnabled(false);
+                                        requestSlot(slot, date, slotKey));
                             }
+                            else {
+                                String status = slotSnap.child("status")
+                                        .getValue(String.class);
+                                String userId = slotSnap.child("userId")
+                                        .getValue(String.class);
 
-                            slotGrid.addView(slot);
+                                if ("REQUESTED".equals(status)) {
+                                    if (currentUser.getUid().equals(userId)) {
+                                        slot.setBackgroundColor(COLOR_REQUESTED);
+                                        slot.setOnClickListener(v ->
+                                                cancelSlot(slot, date, slotKey));
+                                    } else {
+                                        slot.setBackgroundColor(COLOR_OTHER_BOOKED);
+                                        slot.setEnabled(false);
+                                    }
+                                }
+                                else if ("CONFIRMED".equals(status)) {
+                                    if (currentUser.getUid().equals(userId)) {
+                                        slot.setBackgroundColor(COLOR_MY_BOOKED);
+                                    } else {
+                                        slot.setBackgroundColor(COLOR_OTHER_BOOKED);
+                                    }
+                                    slot.setEnabled(false);
+                                }
+                            }
                         }
                     }
 
@@ -186,22 +207,31 @@ public class WorkerDetailActivity extends AppCompatActivity {
                 });
     }
 
-    // ======================================================
-    // SLOT SELECTION
-    // ======================================================
-    private void selectSlot(Button slot, String date, String slotKey) {
+    // ================= REQUEST SLOT =================
+    private void requestSlot(Button slot, String date, String slotKey) {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("status", "REQUESTED");
+        data.put("userId", currentUser.getUid());
 
-        slot.setBackgroundColor(Color.parseColor("#FFA500")); // ORANGE
-        slot.setEnabled(false);
+        bookingRef.child(date).child(slotKey).setValue(data)
+                .addOnSuccessListener(aVoid -> {
+                    slot.setBackgroundColor(COLOR_REQUESTED);
+                    slot.setOnClickListener(v ->
+                            cancelSlot(slot, date, slotKey));
+                    Toast.makeText(this,
+                            "Request sent", Toast.LENGTH_SHORT).show();
+                });
+    }
 
-        bookingRef.child(date)
-                .child(slotKey)
-                .setValue(currentUser.getUid())
-                .addOnSuccessListener(aVoid ->
-                        Toast.makeText(this,
-                                "Slot requested", Toast.LENGTH_SHORT).show())
-                .addOnFailureListener(e ->
-                        Toast.makeText(this,
-                                "Booking failed", Toast.LENGTH_SHORT).show());
+    // ================= CANCEL SLOT =================
+    private void cancelSlot(Button slot, String date, String slotKey) {
+        bookingRef.child(date).child(slotKey).removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    slot.setBackgroundColor(COLOR_AVAILABLE);
+                    slot.setOnClickListener(v ->
+                            requestSlot(slot, date, slotKey));
+                    Toast.makeText(this,
+                            "Request canceled", Toast.LENGTH_SHORT).show();
+                });
     }
 }

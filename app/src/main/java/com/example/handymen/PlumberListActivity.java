@@ -1,11 +1,8 @@
 package com.example.handymen;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.RadioButton;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,18 +12,15 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.*;
 
 import java.util.ArrayList;
+
 public class PlumberListActivity extends AppCompatActivity {
 
-    RecyclerView rv;
+    RecyclerView rvWorkers;
     WorkerAdapter adapter;
-    ArrayList<Worker> list;
+    ArrayList<Worker> workerList;
 
     RadioButton rbAll, rbMyLocation;
     DatabaseReference workersRef;
@@ -38,72 +32,122 @@ public class PlumberListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_plumber_list);
 
-        rv = findViewById(R.id.rvWorkers);
+        // 🔹 Views
+        rvWorkers = findViewById(R.id.rvWorkers);
         rbAll = findViewById(R.id.rbAll);
         rbMyLocation = findViewById(R.id.rbMyLocation);
 
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        list = new ArrayList<>();
-        adapter = new WorkerAdapter(list);
-        rv.setAdapter(adapter);
+        rvWorkers.setLayoutManager(new LinearLayoutManager(this));
 
-        workersRef = FirebaseDatabase.getInstance().getReference("workers");
+        workerList = new ArrayList<>();
+        adapter = new WorkerAdapter(workerList);
+        rvWorkers.setAdapter(adapter);
 
-        // Get user location
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
-            String key = user.getEmail().replace(".", "_");
-            FirebaseDatabase.getInstance().getReference("users")
-                    .child(key)
-                    .child("location")
-                    .addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot s) {
-                            myLocation = s.getValue(String.class);
-                            loadWorkers(false);
-                        }
-                        @Override public void onCancelled(@NonNull DatabaseError e) {}
-                    });
-        }
+        // 🔹 Click → Worker Details (ADDED)
+        adapter.setOnItemClickListener(worker -> {
 
-        rbAll.setOnCheckedChangeListener((b, checked) -> {
-            if (checked) loadWorkers(false);
-        });
-
-        rbMyLocation.setOnCheckedChangeListener((b, checked) -> {
-            if (checked) loadWorkers(true);
-        });
-    }
-
-    private void loadWorkers(boolean filterLocation) {
-        workersRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snap) {
-                list.clear();
-
-                for (DataSnapshot ds : snap.getChildren()) {
-                    Worker w = ds.getValue(Worker.class);
-                    if (w == null) continue;
-
-                    if (!"Plumber".equalsIgnoreCase(w.profession)) continue;
-
-                    if (filterLocation && !String.valueOf(w.location).equalsIgnoreCase(myLocation))
-                        continue;
-
-
-                    list.add(w);
-                }
-
-                adapter.notifyDataSetChanged();
-
-                if (list.isEmpty()) {
-                    Toast.makeText(PlumberListActivity.this,
-                            "No plumbers found", Toast.LENGTH_SHORT).show();
-                }
+            if (worker.email == null) {
+                Toast.makeText(this, "Worker email missing", Toast.LENGTH_SHORT).show();
+                return;
             }
 
-            @Override
-            public void onCancelled(@NonNull DatabaseError e) {}
+            String workerId = worker.email.replace(".", "_");
+
+            Intent intent = new Intent(
+                    PlumberListActivity.this,
+                    WorkerDetailActivity.class
+            );
+            intent.putExtra("workerId", workerId);
+            startActivity(intent);
         });
+
+        workersRef = FirebaseDatabase.getInstance()
+                .getReference("workers");
+
+        // 🔹 Get user location (IMPROVED SAFETY)
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user != null && user.getEmail() != null) {
+
+            String userKey = user.getEmail().replace(".", "_");
+
+            FirebaseDatabase.getInstance()
+                    .getReference("users")
+                    .child(userKey)
+                    .child("location")
+                    .addListenerForSingleValueEvent(
+                            new ValueEventListener() {
+                                @Override
+                                public void onDataChange(
+                                        @NonNull DataSnapshot snapshot) {
+                                    myLocation = snapshot.getValue(String.class);
+                                    loadWorkers(false);
+                                }
+
+                                @Override
+                                public void onCancelled(
+                                        @NonNull DatabaseError error) {}
+                            });
+        } else {
+            loadWorkers(false);
+        }
+
+        rbAll.setOnCheckedChangeListener(
+                (b, checked) -> {
+                    if (checked) loadWorkers(false);
+                });
+
+        rbMyLocation.setOnCheckedChangeListener(
+                (b, checked) -> {
+                    if (checked) loadWorkers(true);
+                });
+    }
+
+    // ======================================================
+    // LOAD PLUMBERS
+    // ======================================================
+    private void loadWorkers(boolean filterLocation) {
+
+        workersRef.addListenerForSingleValueEvent(
+                new ValueEventListener() {
+                    @Override
+                    public void onDataChange(
+                            @NonNull DataSnapshot snapshot) {
+
+                        workerList.clear();
+
+                        for (DataSnapshot ds : snapshot.getChildren()) {
+
+                            Worker worker = ds.getValue(Worker.class);
+                            if (worker == null) continue;
+
+                            // 🔹 Only plumbers
+                            if (!"Plumber"
+                                    .equalsIgnoreCase(worker.profession))
+                                continue;
+
+                            // 🔹 Filter by location (NULL SAFE)
+                            if (filterLocation &&
+                                    myLocation != null &&
+                                    worker.location != null &&
+                                    !worker.location.equalsIgnoreCase(myLocation))
+                                continue;
+
+                            workerList.add(worker);
+                        }
+
+                        adapter.notifyDataSetChanged();
+
+                        if (workerList.isEmpty()) {
+                            Toast.makeText(
+                                    PlumberListActivity.this,
+                                    "No plumbers found",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(
+                            @NonNull DatabaseError error) {}
+                });
     }
 }

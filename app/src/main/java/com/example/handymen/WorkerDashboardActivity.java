@@ -1,11 +1,12 @@
 package com.example.handymen;
 
+import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.*;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -13,79 +14,64 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.*;
 
+import java.util.HashMap;
+
 public class WorkerDashboardActivity extends AppCompatActivity {
 
-
+    // ================= UI =================
     private EditText etName, etEmail, etPhone, etProfession, etExperience, etRate, etLocation;
     private DatePicker datePicker;
     private GridLayout slotGrid;
     private Button btnSave, btnSignOut, btnNotification;
+    private TextView tvSelectedDate;
 
+    // ================= FIREBASE =================
+    private DatabaseReference workerRef, bookingRef;
+    private FirebaseUser currentWorker;
 
-    private DatabaseReference workerRef;
+    private String workerEmailKey;
+    private String selectedDate;
 
+    // ================= COLORS =================
+    private final int COLOR_AVAILABLE = Color.LTGRAY;
+    private final int COLOR_REQUESTED = Color.YELLOW;
+    private final int COLOR_CONFIRMED = Color.parseColor("#2d9d48");
 
-    enum SlotStatus { FREE, REQUESTED, BOOKED }
-    private SlotStatus[] slots = new SlotStatus[8];
-
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        try {
-            setContentView(R.layout.activity_worker_dashboard);
-        } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Layout load error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            return;
-        }
+        setContentView(R.layout.activity_worker_dashboard); // ✅ ONLY ONCE
 
         initViews();
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-            Toast.makeText(this, "No user logged in", Toast.LENGTH_SHORT).show();
+        // ================= AUTH =================
+        currentWorker = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentWorker == null || currentWorker.getEmail() == null) {
+            Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
-        String email = user.getEmail();
-        if (email == null) {
-            Toast.makeText(this, "User email not found", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
+        workerEmailKey = currentWorker.getEmail().replace(".", "_");
 
-        String workerId = email.replace(".", "_");
+        // ================= FIREBASE REFS =================
         workerRef = FirebaseDatabase.getInstance()
                 .getReference("workers")
-                .child(workerId);
+                .child(workerEmailKey);
 
-        fetchWorkerData(workerId);
+        bookingRef = FirebaseDatabase.getInstance()
+                .getReference("bookings")
+                .child(workerEmailKey);
 
-        initSlots();
+        fetchWorkerData();
+        initSlotButtons();
+        setupDatePicker();
         setupButtons();
     }
 
-    private void initViews() {
-        etName = findViewById(R.id.etName);
-        etEmail = findViewById(R.id.etEmail);
-        etPhone = findViewById(R.id.etPhone);
-        etProfession = findViewById(R.id.etProfession);
-        etExperience = findViewById(R.id.etExperience);
-        etRate = findViewById(R.id.etRate);
-        etLocation = findViewById(R.id.etLocation);
-        datePicker = findViewById(R.id.datePicker);
-        slotGrid = findViewById(R.id.slotGrid);
-
-        btnSave = findViewById(R.id.btnSaveChanges);
-        btnSignOut = findViewById(R.id.btnSignOut);
-        btnNotification = findViewById(R.id.btnNotification);
-    }
-
-    private void fetchWorkerData(String workerId) {
-        if (workerRef == null) return;
-
+    // ================= LOAD WORKER =================
+    private void fetchWorkerData() {
         workerRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -95,99 +81,164 @@ public class WorkerDashboardActivity extends AppCompatActivity {
                     return;
                 }
 
-                Worker worker = snapshot.getValue(Worker.class);
-                if (worker == null) {
-                    Toast.makeText(WorkerDashboardActivity.this,
-                            "Worker data is null", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+                Worker w = snapshot.getValue(Worker.class);
+                if (w == null) return;
 
-                if (etName != null) etName.setText(worker.name);
-                if (etEmail != null) etEmail.setText(worker.email);
-                if (etPhone != null) etPhone.setText(worker.phone);
-                if (etProfession != null) etProfession.setText(worker.profession);
-                if (etExperience != null) etExperience.setText(worker.experience);
-                if (etRate != null) etRate.setText(worker.rate);
-                if (etLocation != null) etLocation.setText(worker.location);
+                etName.setText(w.name);
+                etEmail.setText(w.email);
+                etPhone.setText(w.phone);
+                etProfession.setText(w.profession);
+                etExperience.setText(w.experience);
+                etRate.setText(w.rate);
+                etLocation.setText(w.location);
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                Log.e("WorkerDashboard", "Firebase error: " + error.getMessage());
+                Log.e("WORKER", error.getMessage());
             }
         });
     }
 
-    private void initSlots() {
-        if (slotGrid == null) return;
+    // ================= DATE PICKER =================
+    private void setupDatePicker() {
+        datePicker.init(
+                datePicker.getYear(),
+                datePicker.getMonth(),
+                datePicker.getDayOfMonth(),
+                (view, y, m, d) -> {
+                    selectedDate = d + "-" + (m + 1) + "-" + y;
+                    tvSelectedDate.setText(selectedDate);
+                    listenSlots(selectedDate);
+                }
+        );
 
-        for (int i = 0; i < slotGrid.getChildCount() && i < slots.length; i++) {
-            View v = slotGrid.getChildAt(i);
-            if (!(v instanceof Button)) continue;
+        selectedDate = datePicker.getDayOfMonth() + "-"
+                + (datePicker.getMonth() + 1) + "-"
+                + datePicker.getYear();
 
-            Button btn = (Button) v;
-            int index = i;
-            slots[i] = SlotStatus.FREE;
-            updateSlotUI(btn, SlotStatus.FREE);
+        tvSelectedDate.setText(selectedDate);
+        listenSlots(selectedDate);
+    }
 
-            btn.setOnClickListener(view -> handleSlotClick(index, btn));
+    // ================= INIT SLOTS =================
+    private void initSlotButtons() {
+        slotGrid.removeAllViews();
+        slotGrid.setColumnCount(2);
+
+        for (int i = 0; i < 8; i++) {
+            Button btn = new Button(this);
+            btn.setAllCaps(false);
+            slotGrid.addView(btn);
         }
     }
 
-    private void handleSlotClick(int index, Button btn) {
-        if (index >= slots.length) return;
+    // ================= REALTIME LISTENER =================
+    private void listenSlots(String date) {
+        bookingRef.child(date).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                updateSlots(snapshot);
+            }
 
-        if (slots[index] == SlotStatus.FREE) return;
-
-        slots[index] = (slots[index] == SlotStatus.REQUESTED) ? SlotStatus.BOOKED : SlotStatus.FREE;
-        updateSlotUI(btn, slots[index]);
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("WORKER", error.getMessage());
+            }
+        });
     }
 
-    private void updateSlotUI(Button btn, SlotStatus status) {
-        if (btn == null) return;
+    // ================= UPDATE SLOTS =================
+    private void updateSlots(DataSnapshot snapshot) {
+        for (int i = 0; i < slotGrid.getChildCount(); i++) {
 
-        switch (status) {
-            case FREE:
-                btn.setBackgroundColor(Color.LTGRAY);
-                btn.setTextColor(Color.BLACK);
-                break;
-            case REQUESTED:
-                btn.setBackgroundColor(Color.YELLOW);
-                btn.setTextColor(Color.BLACK);
-                break;
-            case BOOKED:
-                btn.setBackgroundColor(Color.parseColor("#2d9d48"));
-                btn.setTextColor(Color.WHITE);
-                break;
+            Button slot = (Button) slotGrid.getChildAt(i);
+            int hour = 9 + i;
+            String slotKey = hour + ":00";
+
+            slot.setText(slotKey);
+            slot.setEnabled(true);
+            slot.setOnClickListener(null);
+
+            DataSnapshot slotSnap = snapshot.child(slotKey);
+
+            if (!slotSnap.exists()) {
+                slot.setBackgroundTintList(ColorStateList.valueOf(COLOR_AVAILABLE));
+                continue;
+            }
+
+            String status = slotSnap.child("status").getValue(String.class);
+            String userId = slotSnap.child("userId").getValue(String.class);
+
+            if ("REQUESTED".equals(status)) {
+                slot.setBackgroundTintList(ColorStateList.valueOf(COLOR_REQUESTED));
+                slot.setOnClickListener(v -> confirmSlot(snapshot.getKey(), slotKey, userId));
+            }
+            else if ("CONFIRMED".equals(status)) {
+                slot.setBackgroundTintList(ColorStateList.valueOf(COLOR_CONFIRMED));
+                slot.setEnabled(false);
+            }
         }
     }
 
+    // ================= CONFIRM =================
+    private void confirmSlot(String date, String slotKey, String userId) {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("status", "CONFIRMED");
+        data.put("userId", userId);
+
+        bookingRef.child(date).child(slotKey)
+                .setValue(data)
+                .addOnSuccessListener(aVoid ->
+                        Toast.makeText(this, "Booking confirmed", Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    // ================= BUTTONS =================
     private void setupButtons() {
-        if (btnSave != null) {
-            btnSave.setOnClickListener(v -> saveProfile());
-        }
 
-        if (btnNotification != null) {
-            btnNotification.setOnClickListener(v ->
-                    Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show());
-        }
+        btnSave.setOnClickListener(v -> saveProfile());
 
-        if (btnSignOut != null) {
-            btnSignOut.setOnClickListener(v -> finish());
-        }
+        btnNotification.setOnClickListener(v ->
+                Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show()
+        );
+
+        btnSignOut.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(this, WorkerLoginActivity.class));
+            finish();
+        });
     }
 
+    // ================= SAVE =================
     private void saveProfile() {
-        if (workerRef == null) return;
+        workerRef.child("name").setValue(etName.getText().toString());
+        workerRef.child("email").setValue(etEmail.getText().toString());
+        workerRef.child("phone").setValue(etPhone.getText().toString());
+        workerRef.child("profession").setValue(etProfession.getText().toString());
+        workerRef.child("experience").setValue(etExperience.getText().toString());
+        workerRef.child("rate").setValue(etRate.getText().toString());
+        workerRef.child("location").setValue(etLocation.getText().toString());
 
-        if (etName != null) workerRef.child("name").setValue(etName.getText().toString());
-        if (etEmail != null) workerRef.child("email").setValue(etEmail.getText().toString());
-        if (etPhone != null) workerRef.child("phone").setValue(etPhone.getText().toString());
-        if (etProfession != null) workerRef.child("profession").setValue(etProfession.getText().toString());
-        if (etExperience != null) workerRef.child("experience").setValue(etExperience.getText().toString());
-        if (etRate != null) workerRef.child("rate").setValue(etRate.getText().toString());
-        if (etLocation != null) workerRef.child("location").setValue(etLocation.getText().toString());
+        Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
+    }
 
-        Toast.makeText(this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+    // ================= INIT VIEWS =================
+    private void initViews() {
+        etName = findViewById(R.id.etName);
+        etEmail = findViewById(R.id.etEmail);
+        etPhone = findViewById(R.id.etPhone);
+        etProfession = findViewById(R.id.etProfession);
+        etExperience = findViewById(R.id.etExperience);
+        etRate = findViewById(R.id.etRate);
+        etLocation = findViewById(R.id.etLocation);
+
+        datePicker = findViewById(R.id.datePicker);
+        slotGrid = findViewById(R.id.slotGrid);
+        tvSelectedDate = findViewById(R.id.tvSelectedDate);
+
+        btnSave = findViewById(R.id.btnSaveChanges);
+        btnSignOut = findViewById(R.id.btnSignOut);
+        btnNotification = findViewById(R.id.btnNotification);
     }
 }

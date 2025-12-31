@@ -67,7 +67,11 @@ public class UserDashboardActivity extends AppCompatActivity {
 
             if (id == R.id.menuProfile) {
                 startActivity(new Intent(this, ProfileActivity.class));
-            } else if (id == R.id.menuLogout) {
+            }  else if(id == R.id.menuOngoing) {
+                startActivity(new Intent(this, OngoingWorkActivity.class));
+            }  else if(id == R.id.menuRequests) {
+                startActivity(new Intent(this, MyRequestsActivity.class));
+            }else if (id == R.id.menuLogout) {
                 logout();
             }
 
