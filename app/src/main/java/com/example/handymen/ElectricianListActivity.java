@@ -20,7 +20,7 @@ public class ElectricianListActivity extends AppCompatActivity {
 
     RecyclerView rvWorkers;
     WorkerAdapter adapter;
-    ArrayList<Worker> list;
+    ArrayList<Worker> workerList;
 
     RadioButton rbAll, rbMyLocation;
     DatabaseReference workersRef;
@@ -32,21 +32,32 @@ public class ElectricianListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_electrician_list);
 
+        // 🔹 Views
         rvWorkers = findViewById(R.id.rvWorkers);
         rbAll = findViewById(R.id.rbAll);
         rbMyLocation = findViewById(R.id.rbMyLocation);
 
         rvWorkers.setLayoutManager(new LinearLayoutManager(this));
 
-        list = new ArrayList<>();
-        adapter = new WorkerAdapter(list);
+        workerList = new ArrayList<>();
+        adapter = new WorkerAdapter(workerList);
         rvWorkers.setAdapter(adapter);
 
-        // ✅ CLICK HANDLER (ONLY ONCE)
+        // 🔹 Click → Worker Details
         adapter.setOnItemClickListener(worker -> {
-            Intent intent = new Intent(this, WorkerDetailActivity.class);
-            intent.putExtra("workerEmail", worker.email);
 
+            if (worker.email == null) {
+                Toast.makeText(this, "Worker email missing", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            String workerId = worker.email.replace(".", "_");
+
+            Intent intent = new Intent(
+                    ElectricianListActivity.this,
+                    WorkerDetailActivity.class
+            );
+            intent.putExtra("workerId", workerId);
             startActivity(intent);
         });
 
@@ -55,9 +66,12 @@ public class ElectricianListActivity extends AppCompatActivity {
 
         // 🔹 Get user location
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null) {
+        if (user != null && user.getEmail() != null) {
+
             String userKey = user.getEmail().replace(".", "_");
-            FirebaseDatabase.getInstance().getReference("users")
+
+            FirebaseDatabase.getInstance()
+                    .getReference("users")
                     .child(userKey)
                     .child("location")
                     .addListenerForSingleValueEvent(
@@ -65,8 +79,7 @@ public class ElectricianListActivity extends AppCompatActivity {
                                 @Override
                                 public void onDataChange(
                                         @NonNull DataSnapshot snapshot) {
-                                    myLocation =
-                                            snapshot.getValue(String.class);
+                                    myLocation = snapshot.getValue(String.class);
                                     loadWorkers(false);
                                 }
 
@@ -74,44 +87,53 @@ public class ElectricianListActivity extends AppCompatActivity {
                                 public void onCancelled(
                                         @NonNull DatabaseError error) {}
                             });
+        } else {
+            loadWorkers(false);
         }
 
         rbAll.setOnCheckedChangeListener(
-                (b, checked) -> { if (checked) loadWorkers(false); });
+                (b, checked) -> {
+                    if (checked) loadWorkers(false);
+                });
 
         rbMyLocation.setOnCheckedChangeListener(
-                (b, checked) -> { if (checked) loadWorkers(true); });
+                (b, checked) -> {
+                    if (checked) loadWorkers(true);
+                });
     }
 
     private void loadWorkers(boolean filterLocation) {
+
         workersRef.addListenerForSingleValueEvent(
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(
                             @NonNull DataSnapshot snapshot) {
 
-                        list.clear();
+                        workerList.clear();
 
                         for (DataSnapshot ds : snapshot.getChildren()) {
-                            Worker w = ds.getValue(Worker.class);
-                            if (w == null) continue;
+
+                            Worker worker = ds.getValue(Worker.class);
+                            if (worker == null) continue;
+
 
                             if (!"Electrician"
-                                    .equalsIgnoreCase(w.profession))
+                                    .equalsIgnoreCase(worker.profession))
                                 continue;
 
                             if (filterLocation &&
                                     myLocation != null &&
-                                    w.location != null &&
-                                    !w.location.equalsIgnoreCase(myLocation))
+                                    worker.location != null &&
+                                    !worker.location.equalsIgnoreCase(myLocation))
                                 continue;
 
-                            list.add(w);
+                            workerList.add(worker);
                         }
 
                         adapter.notifyDataSetChanged();
 
-                        if (list.isEmpty()) {
+                        if (workerList.isEmpty()) {
                             Toast.makeText(
                                     ElectricianListActivity.this,
                                     "No electricians found",
